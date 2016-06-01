@@ -12,11 +12,6 @@ class App extends WebGLApp {
 
         var camera = new Camera();
         camera.goHome([0, 0, 5]);
-        // camera.setFocus([0.0,0.0,0.0]);
-	    // camera.setAzimuth(cameraAzimuth);
-	    // camera.setElevation(cameraElevation);
-        // camera.hookRenderer = render;
-
 
         transform.init(this.gl, this.canvas, camera);
         //init Program

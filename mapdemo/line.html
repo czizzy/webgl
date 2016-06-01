@@ -1,0 +1,83 @@
+<html>
+
+<head>
+<title>Line Demo</title>
+<meta http-equiv='content-type' content='text/html; charset=ISO-8859-1'>
+<!-- MATH Libraries //-->
+<script type='text/javascript' src='js/vendor/gl-matrix.js'></script>
+<script id="shader-vs-2" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat4 uNMatrix;
+
+    void main() {
+        
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+    }
+</script>
+
+<script id="shader-fs-2" type="x-shader/x-fragment">
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+    void main() {
+        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    }
+</script>
+
+<script id="shader-fs-1" type="x-shader/x-fragment">
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+    void main() {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+</script>
+
+<script id="shader-vs-1" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec2 aVertexNormal;
+    attribute float aVertexIndex;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat4 uNMatrix;
+
+    void main() {
+    aVertexNormal;
+    aVertexIndex;
+    vec2 vertexPos;
+
+//    if(mod(aVertexIndex, 4.0) == 0.0) {
+    vertexPos = aVertexPosition.xy + normalize(aVertexNormal);
+//    }
+        gl_Position = uPMatrix * uMVMatrix * vec4(vertexPos, 0.0, 1.0);
+    }
+</script>
+</head>
+
+<body>
+<div id="header">
+    <h1>Line</h1>
+</div>
+<div id="content">
+    <canvas width="800" height="500" id='the-canvas'></canvas>
+    <div>
+        camera: 
+        <input id="orbit" type="radio" value="orbit" name="camera" checked/>
+        <label for="orbit">orbit</label>
+        <input id="track" type="radio" value="track" name="camera"/>
+        <label for="track">track</label>
+    </div>
+</div>
+<script type="text/javascript" src="js/framework/Utils.js"></script>
+<script type="text/javascript" src="js/framework/WebGLApp.js"></script>
+<script type="text/javascript" src="js/framework/Camera.js"></script>
+<script type="text/javascript" src="js/framework/Scene.js"></script>
+<script type="text/javascript" src="js/framework/Program.js"></script>
+<script type="text/javascript" src="js/framework/Transforms.js"></script>
+<script type="text/javascript" src="js/myapp.js"></script>
+</body>
+</html>
