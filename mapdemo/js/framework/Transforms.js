@@ -21,12 +21,12 @@ var transform = {
         
     },
 
-    setMatrixUniforms: function() {
+    setMatrixUniforms: function(unis) {
         this.calculateNormal();
 
-        this.gl.uniformMatrix4fv(Program.uMVMatrix, false, this.mvMatrix);
-        this.gl.uniformMatrix4fv(Program.uNMatrix, false, this.nMatrix);
-        this.gl.uniformMatrix4fv(Program.uPMatrix, false, this.pMatrix);
+        this.gl.uniformMatrix4fv(unis.uMVMatrix, false, this.mvMatrix);
+        this.gl.uniformMatrix4fv(unis.uNMatrix, false, this.nMatrix);
+        this.gl.uniformMatrix4fv(unis.uPMatrix, false, this.pMatrix);
     },
 
     calculatePerspective: function() {

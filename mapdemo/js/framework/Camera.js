@@ -73,16 +73,16 @@ class Camera {
             this.update();
         });
         var me = this;
-        document.getElementById('track').addEventListener('change', function() {
-            if(this.checked) {
-                me.setType('track');
-            }
-        });
-        document.getElementById('orbit').addEventListener('change', function() {
-            if(this.checked) {
-                me.setType('orbit');
-            }
-        });
+        // document.getElementById('track').addEventListener('change', function() {
+        //     if(this.checked) {
+        //         me.setType('track');
+        //     }
+        // });
+        // document.getElementById('orbit').addEventListener('change', function() {
+        //     if(this.checked) {
+        //         me.setType('orbit');
+        //     }
+        // });
 
     }
 

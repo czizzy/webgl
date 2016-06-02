@@ -17,7 +17,7 @@ class WebGLApp {
 
     renderLoop() {
         this.render();
-        requestAnimationFrame(this.renderLoop.bind(this));
+        // requestAnimationFrame(this.renderLoop.bind(this));
     }
 
 }

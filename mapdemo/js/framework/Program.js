@@ -1,4 +1,5 @@
 var Program = {
+    cache: {},
     init: function(gl) {
         this.gl = gl;
     },
@@ -9,14 +10,25 @@ var Program = {
         var prg = this.gl.createProgram();
         this.gl.attachShader(prg, vertexShader);
         this.gl.attachShader(prg, fragmentShader);
+        this.gl.bindAttribLocation(prg, 0 , "aVertexPosition");
         this.gl.linkProgram(prg);
         if (!this.gl.getProgramParameter(prg, this.gl.LINK_STATUS)) {
             console.log("Could not initialise shaders");
         }
         this.gl.useProgram(prg);
-	    this.setAttributeLocations(attributeList, prg);
-	    this.setUniformLocations(uniformList, prg);
-        return prg;
+	    var attrs = this.setAttributeLocations(attributeList, prg);
+	    var unis = this.setUniformLocations(uniformList, prg);
+        this.cache[id] = {
+            program: prg,
+            unis: unis,
+            attrs: attrs
+        };
+        return this.cache[id];
+    },
+
+    use: function(id) {
+        this.gl.useProgram(this.cache[id].program);
+        return this.cache[id];
     },
 
     getShader: function(id) {
@@ -53,16 +65,20 @@ var Program = {
 
     setAttributeLocations: function(attrList, prg) {
         var me = this;
+        var attrs = {};
         attrList.forEach(function(attr) {
-            me[attr] = me.gl.getAttribLocation(prg, attr);
+            attrs[attr] = me.gl.getAttribLocation(prg, attr);
         });
+        return attrs;
     },
 
     setUniformLocations: function(uniList, prg) {
         var me = this;
+        var unis = {};
         uniList.forEach(function(uni) {
-            me[uni] = me.gl.getUniformLocation(prg, uni);
+            unis[uni] = me.gl.getUniformLocation(prg, uni);
         });
+        return unis;
     }
 
 };
