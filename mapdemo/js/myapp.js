@@ -1,3 +1,5 @@
+var join = 'miter';
+var withLines = true;
 class App extends WebGLApp {
     constructor(canvas) {
         super(canvas);
@@ -18,13 +20,14 @@ class App extends WebGLApp {
 	    var attributeList = [
             "aVertexPosition",
 			"aVertexNormal",
-            "aVertexIndex",
-			"aVertexColor"
+            "aVertexIndex"
         ];
 
 	    var uniformList = [
             "uPMatrix", 
 			"uMVMatrix",
+            "uColor",
+            "uLineWidth"
 		];
         Program.load(1, attributeList, uniformList);
 
@@ -53,14 +56,29 @@ class App extends WebGLApp {
         }
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-        this.renderOrigin();
         this.renderLines();
+        this.renderOrigin();
+    }
+
+    switch() {
+        Scene.removeObject('line');
+        Scene.loadObject('models/line.json', 'line', null, this.render.bind(this), join);
+    }
+
+    setDepth(layer) {
+        var delta = 1 / Math.pow(2, 16);
+        var total = 2;
+        var range = 1 - ((total - 1) * delta);
+        var near = layer * delta;
+        this.gl.depthRange(near, near + range);
     }
 
     renderLines() {
+        this.setDepth(1);
         var prg = Program.use(1);
         console.log(prg)
         var attrs = prg.attrs;
+        var unis = prg.unis;
         Scene.objects.forEach(obj => {
 
             transform.push();
@@ -77,8 +95,16 @@ class App extends WebGLApp {
 
             this.gl.vertexAttribPointer(attrs.aVertexIndex, 1, this.gl.FLOAT, false, 5 * size, 4 * size);
             this.gl.enableVertexAttribArray(attrs.aVertexIndex);
+            this.gl.uniform3f(unis.uColor, 1, 0, 0);
+            this.gl.uniform1f(unis.uLineWidth, obj.lineWidth);
 
             this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, obj.vertices.length / 5);
+
+            if(withLines) {
+                this.setDepth(0);
+                this.gl.uniform3f(unis.uColor, 0, 0, 1);
+                this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.vertices.length / 5);
+            }
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
@@ -86,6 +112,7 @@ class App extends WebGLApp {
         });
     }
     renderOrigin() {
+        this.setDepth(0);
         var prg = Program.use(2);
         console.log(prg);
         var attrs = prg.attrs;
@@ -96,7 +123,7 @@ class App extends WebGLApp {
             transform.setMatrixUniforms(prg.unis);
             transform.pop();
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, obj.originvbo);
-            this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.BYTE, false, 0, 0);
+            this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.FLOAT, false, 0, 0);
             this.gl.enableVertexAttribArray(attrs.aVertexPosition);
 
             this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.originVertices.length / 2);
@@ -111,5 +138,18 @@ class App extends WebGLApp {
 var app = new App(document.getElementById('the-canvas'));
 
 document.getElementById('render').onclick = function() {
+    withLines = false;
     app.render();
+}
+document.getElementById('render-with-lines').onclick = function() {
+    withLines = true;
+    app.render();
+}
+document.getElementById('miter').onclick = function() {
+    join = 'miter';
+    app.switch();
+}
+document.getElementById('bevel').onclick = function() {
+    join = 'bevel';
+    app.switch();
 }

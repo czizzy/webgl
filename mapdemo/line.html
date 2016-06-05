@@ -31,14 +31,16 @@
     #ifdef GL_ES
     precision highp float;
     #endif
+    uniform vec3 uColor;
+
     varying vec2 vNormal;
     void main() {
         float dist = length(vNormal);
         if(dist > 1.0) {
-                gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                gl_FragColor = vec4(uColor, 1.0);
                        // discard;
         } else {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            gl_FragColor = vec4(uColor, 1.0);
         }
     }
 </script>
@@ -52,13 +54,14 @@
     uniform mat4 uPMatrix;
     uniform mat4 uNMatrix;
 
+    uniform float uLineWidth;
+    
     varying vec2 vNormal;
 
     void main() {
         vec2 vertexPos;
         aVertexIndex;
-        vNormal = aVertexNormal;
-        vertexPos = aVertexPosition.xy + aVertexNormal;
+        vertexPos = aVertexPosition.xy + aVertexNormal * uLineWidth;
         gl_Position = uPMatrix * uMVMatrix * vec4(vertexPos, 0.0, 1.0);
     }
 </script>
@@ -72,6 +75,13 @@
     <canvas width="800" height="500" id='the-canvas'></canvas>
     <div>
         <button id="render">render</button>
+        <button id="render-with-lines">render with lines</button>
+    </div>
+    <div>
+        join:
+        <button id="miter">miter</button>
+        <button id="bevel">bevel</button>
+        <button id="round">round</button>
     </div>
 </div>
 <script type="text/javascript" src="js/framework/Utils.js"></script>
