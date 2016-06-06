@@ -33,8 +33,10 @@ var Scene = {
         var normal;
         if(index === 0 || index === 2) {
             normal = [-vector[1], vector[0]];
-        } else {
+        } else if(index === 3 || index === 1){
             normal = [vector[1], -vector[0]];
+        } else {
+            normal = [-vector[1], vector[0]];
         }
         return normal;
     },
@@ -45,27 +47,21 @@ var Scene = {
         return [-tangent[1] * miter, tangent[0] * miter];
     },
 
-    useNormal: function(type, index, vectors, vIndex) {
-        if(type === 'miter') {
-            if(index === 0 || index === 1) {
-                if(vIndex === 0) {
-                    return true;
-                }
-            } else {
-                if(vIndex === vectors.length - 1) {
-                    return true;
-                }
+    useNormal: function(type, tangent, normal, index) {
+        if(type === 'bevel') {
+            var cos = vec2.dot(tangent, normal);
+            if((index === 0 || index === 1) && cos > 0) {
+                return true;
+            } else if((index ===2 || index === 3) && cos < 0) {
+                return true;
             }
         }
-        if(type === 'bevel') {
-            if(index === 0 || index === 1) {
-                if(vIndex === 0) {
-                    return true;
-                }
-            } else {
-                if(vIndex === vectors.length - 1) {
-                    return true;
-                }
+        if(type === 'round') {
+            var cos = vec2.dot(tangent, normal);
+            if((index === 0 || index === 1) && cos > 0) {
+                return true;
+            } else if((index ===2 || index === 3) && cos < 0) {
+                return true;
             }
         }
         return false;
@@ -73,10 +69,6 @@ var Scene = {
 
     calcOffset: function(vector, index, vectors, vIndex, type) {
         var normal = this.calcNormal(vector, index);
-        var useNormal = this.useNormal(type, index, vectors, vIndex);
-        if(useNormal) {
-            return normal;
-        }
         var vector1, vector2;
         if (index === 0 || index === 1) {
             vector1 = vectors[vIndex - 1];
@@ -85,18 +77,33 @@ var Scene = {
             vector1 = vector;
             vector2 = vectors[vIndex + 1];
         }
+        if (!vector1 || !vector2) { // 第一个点或最后一个点
+            normal.push(index);
+            return normal;
+        }
         var tangent = [];
         vec2.normalize(tangent, [vector1[0] + vector2[0], vector1[1] + vector2[1]]);
-        var miter = this.calcMiter(tangent, normal);
-        if(type === 'bevel') {
-            var cos = vec2.dot(miter, vector);
-            if((index === 0 || index === 1) && cos < 0) {
-                return normal;
-            } else if((index ===2 || index === 3) && cos > 0) {
-                return normal;
-            }
-            console.log('cos', cos);
+        var useNormal = this.useNormal(type, tangent, normal, index);
+        if(useNormal) {
+            normal.push(index);
+            return normal;
         }
+
+        var miter = this.calcMiter(tangent, normal);
+
+        if (index === 4) { // round plus dot
+            var normalMiter = [];
+            vec2.normalize(normalMiter, miter);
+            var normalVector = [];
+            vec2.normalize(normalVector, vector);
+            var cos = vec2.dot(normalMiter, normalVector);
+            if (cos < 0) {
+                miter = vec2.negate(miter, miter);
+            }
+        } else {
+            index = 5; // round special point
+        }
+        miter.push(index);
         return miter;
     },
 
@@ -124,6 +131,28 @@ var Scene = {
             newVertices = this.buildMiterVertices(newVertices, vectors, points);
         } else if(type === 'bevel') {
             newVertices = this.buildBevelVertices(newVertices, vectors, points);
+        } else if(type === 'round') {
+            newVertices = this.buildRoundVertices(newVertices, vectors, points);          
+        }
+        return newVertices;
+    },
+
+    buildRoundVertices: function(newVertices, vectors, points) {
+        for(var i = 0; i < vectors.length; i++) {
+            newVertices = newVertices.concat(points[i]);
+            newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, 'round')); // normal
+
+            newVertices = newVertices.concat(points[i]);
+            newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, 'round')); // normal
+
+            newVertices = newVertices.concat(points[i + 1]);
+            newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, 'round')); // normal
+
+            newVertices = newVertices.concat(points[i + 1]);
+            newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, 'round')); // normal
+
+            newVertices = newVertices.concat(points[i + 1]);
+            newVertices = newVertices.concat(this.calcOffset(vectors[i], 4, vectors, i, 'round')); // normal
         }
         return newVertices;
     },
@@ -133,19 +162,15 @@ var Scene = {
             if (i === 0) {
                 newVertices = newVertices.concat(points[i]);
                 newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, 'miter')); // normal
-                newVertices.push(0);
 
                 newVertices = newVertices.concat(points[i]);
                 newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, 'miter')); // normal
-                newVertices.push(1);
             }
             newVertices = newVertices.concat(points[i + 1]);
             newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, 'miter')); // normal
-            newVertices.push(2);
 
             newVertices = newVertices.concat(points[i + 1]);
             newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, 'miter')); // normal
-            newVertices.push(3);
         }
         return newVertices;
     },
@@ -154,19 +179,15 @@ var Scene = {
         for(var i = 0; i < vectors.length; i++) {
             newVertices = newVertices.concat(points[i]);
             newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, 'bevel')); // normal
-            newVertices.push(0);
 
             newVertices = newVertices.concat(points[i]);
             newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, 'bevel')); // normal
-            newVertices.push(1);
 
             newVertices = newVertices.concat(points[i + 1]);
             newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, 'bevel')); // normal
-            newVertices.push(2);
 
             newVertices = newVertices.concat(points[i + 1]);
             newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, 'bevel')); // normal
-            newVertices.push(3);
         }
         return newVertices;
     },

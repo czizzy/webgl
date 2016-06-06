@@ -32,13 +32,18 @@
     precision highp float;
     #endif
     uniform vec3 uColor;
+    uniform vec2 uResolution;
+    uniform float uLineWidth;
 
-    varying vec2 vNormal;
+    varying vec2 vOrigin;
+    varying float vIndex;
+    varying vec2 vPosition;
+
     void main() {
-        float dist = length(vNormal);
-        if(dist > 1.0) {
-                gl_FragColor = vec4(uColor, 1.0);
-                       // discard;
+        float distance = distance(vOrigin, vPosition);
+        if(vIndex > 0.0 && distance > uLineWidth) {
+            gl_FragColor = vec4(uColor, 0.0);
+    //    discard;
         } else {
             gl_FragColor = vec4(uColor, 1.0);
         }
@@ -56,12 +61,22 @@
 
     uniform float uLineWidth;
     
-    varying vec2 vNormal;
+    varying vec2 vOrigin;
+    varying vec2 vPosition;
+    varying float vIndex;
 
     void main() {
         vec2 vertexPos;
-        aVertexIndex;
+        vOrigin = aVertexPosition.xy;
+        if(aVertexIndex == 4.0) {
+            vIndex = 1.0;
+        } else if(aVertexIndex == 5.0) {
+            vIndex = -1.0;
+        } else {
+            vIndex = 0.0;
+        }
         vertexPos = aVertexPosition.xy + aVertexNormal * uLineWidth;
+        vPosition = vertexPos.xy;
         gl_Position = uPMatrix * uMVMatrix * vec4(vertexPos, 0.0, 1.0);
     }
 </script>

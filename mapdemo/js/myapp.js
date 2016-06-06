@@ -1,4 +1,4 @@
-var join = 'miter';
+var join = 'round';
 var withLines = true;
 class App extends WebGLApp {
     constructor(canvas) {
@@ -9,6 +9,8 @@ class App extends WebGLApp {
         this.gl.clearColor(0.2,0.2,0.2, 1.0);
         this.gl.clearDepth(1.0);
         this.gl.enable(this.gl.DEPTH_TEST);
+        this.gl.enable(this.gl.BLEND);
+        this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
         Program.init(this.gl);
 
@@ -19,16 +21,17 @@ class App extends WebGLApp {
 
 	    var attributeList = [
             "aVertexPosition",
-			"aVertexNormal",
+		"aVertexNormal",
             "aVertexIndex"
         ];
 
 	    var uniformList = [
-            "uPMatrix", 
-			"uMVMatrix",
-            "uColor",
-            "uLineWidth"
-		];
+                "uPMatrix", 
+		"uMVMatrix",
+                "uColor",
+                "uLineWidth",
+                "uResoluteion"
+	    ];
         Program.load(1, attributeList, uniformList);
 
 
@@ -45,7 +48,7 @@ class App extends WebGLApp {
 
     loadScene() {
         Scene.init(this.gl);
-        Scene.loadObject('models/line.json', 'line', null, this.render.bind(this));
+        Scene.loadObject('models/line.json', 'line', null, this.render.bind(this), join);
     }
 
     render() {
@@ -97,12 +100,14 @@ class App extends WebGLApp {
             this.gl.enableVertexAttribArray(attrs.aVertexIndex);
             this.gl.uniform3f(unis.uColor, 1, 0, 0);
             this.gl.uniform1f(unis.uLineWidth, obj.lineWidth);
+            this.gl.uniform1f(unis.uResoluteion, this.canvas.width, this.canvas.height);
 
             this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, obj.vertices.length / 5);
 
             if(withLines) {
                 this.setDepth(0);
                 this.gl.uniform3f(unis.uColor, 0, 0, 1);
+                this.gl.lineWidth(1);
                 this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.vertices.length / 5);
             }
 
@@ -125,6 +130,8 @@ class App extends WebGLApp {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, obj.originvbo);
             this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.FLOAT, false, 0, 0);
             this.gl.enableVertexAttribArray(attrs.aVertexPosition);
+
+            this.gl.lineWidth(10);
 
             this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.originVertices.length / 2);
 
@@ -151,5 +158,9 @@ document.getElementById('miter').onclick = function() {
 }
 document.getElementById('bevel').onclick = function() {
     join = 'bevel';
+    app.switch();
+}
+document.getElementById('round').onclick = function() {
+    join = 'round';
     app.switch();
 }
