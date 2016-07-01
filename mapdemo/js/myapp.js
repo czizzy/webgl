@@ -1,4 +1,5 @@
 var join = 'round';
+var cap = 'butt';
 var withLines = true;
 class App extends WebGLApp {
     constructor(canvas) {
@@ -65,7 +66,7 @@ class App extends WebGLApp {
 
     switch() {
         Scene.removeObject('line');
-        Scene.loadObject('models/line.json', 'line', null, this.render.bind(this), join);
+        Scene.loadObject('models/line.json', 'line', null, this.render.bind(this), join, cap);
     }
 
     setDepth(layer) {
@@ -79,7 +80,6 @@ class App extends WebGLApp {
     renderLines() {
         this.setDepth(1);
         var prg = Program.use(1);
-        console.log(prg)
         var attrs = prg.attrs;
         var unis = prg.unis;
         Scene.objects.forEach(obj => {
@@ -162,5 +162,17 @@ document.getElementById('bevel').onclick = function() {
 }
 document.getElementById('round').onclick = function() {
     join = 'round';
+    app.switch();
+}
+document.getElementById('cap-butt').onclick = function() {
+    cap = 'butt';
+    app.switch();
+}
+document.getElementById('cap-square').onclick = function() {
+    cap = 'square';
+    app.switch();
+}
+document.getElementById('cap-round').onclick = function() {
+    cap = 'round';
     app.switch();
 }

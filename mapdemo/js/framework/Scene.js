@@ -3,9 +3,12 @@ var Scene = {
     init: function(gl) {
         this.gl = gl;
     },
-    loadObject: function(filename, alias, attributes, callback, type) {
-        if(!type) {
-            type = 'miter';
+    loadObject: function(filename, alias, attributes, callback, join, cap) {
+        if(!join) {
+            join = 'miter';
+        }
+        if(!cap) {
+             cap = 'butt';
         }
         var request = new XMLHttpRequest();
         console.info('Requesting ' + filename);
@@ -22,7 +25,7 @@ var Scene = {
                         o.alias = alias;
                     }
                     o.remote = true;
-                    Scene.addObject(o,attributes,callback, type);
+                    Scene.addObject(o,attributes,callback, join, cap);
                 }
             }
         };
@@ -67,7 +70,7 @@ var Scene = {
         return false;
     },
 
-    calcOffset: function(vector, index, vectors, vIndex, type) {
+    calcOffset: function(vector, index, vectors, vIndex, join, cap, isPlus) {
         var normal = this.calcNormal(vector, index);
         var vector1, vector2;
         if (index === 0 || index === 1) {
@@ -78,12 +81,33 @@ var Scene = {
             vector2 = vectors[vIndex + 1];
         }
         if (!vector1 || !vector2) { // 第一个点或最后一个点
-            normal.push(index);
-            return normal;
+            if (cap === 'butt') {
+                normal.push(index);
+                return normal;
+            } else {
+                if (isPlus) {
+                    if (!vector1) {
+                        normal = [normal[0] - vector[0], normal[1] - vector[1]];
+                    } else {
+                        normal = [normal[0] + vector[0], normal[1] + vector[1]];
+                    }
+                    console.log(normal);
+                    if (cap === 'round') {
+                        normal.push(4);
+                    } else {
+                        console.log(index);
+                        normal.push(index);
+                    }
+                } else {
+                    normal.push(index);
+                    return normal;
+                }
+                return normal;
+            }
         }
         var tangent = [];
         vec2.normalize(tangent, [vector1[0] + vector2[0], vector1[1] + vector2[1]]);
-        var useNormal = this.useNormal(type, tangent, normal, index);
+        var useNormal = this.useNormal(join, tangent, normal, index);
         if(useNormal) {
             normal.push(index);
             return normal;
@@ -107,7 +131,7 @@ var Scene = {
         return miter;
     },
 
-    buildLineVertices: function(vertices, type) {
+    buildLineVertices: function(vertices, join, cap) {
         var points = [];
         for(var i = 0; i < vertices.length; i++) {
             if(i % 2 === 0) {
@@ -126,73 +150,46 @@ var Scene = {
             }
         }
         var newVertices = [];
-        console.log(type);
-        if(type === 'miter') {
-            newVertices = this.buildMiterVertices(newVertices, vectors, points);
-        } else if(type === 'bevel') {
-            newVertices = this.buildBevelVertices(newVertices, vectors, points);
-        } else if(type === 'round') {
-            newVertices = this.buildRoundVertices(newVertices, vectors, points);          
-        }
+        newVertices = this.buildVertices(newVertices, vectors, points, join, cap);
         return newVertices;
     },
 
-    buildRoundVertices: function(newVertices, vectors, points) {
+    buildVertices: function (newVertices, vectors, points, join, cap) {
+        newVertices = newVertices.concat(points[0]);
+        newVertices = newVertices.concat(this.calcOffset(vectors[0], 0, vectors, -1, join, cap, true)); // normal
+        newVertices = newVertices.concat(points[0]);
+        newVertices = newVertices.concat(this.calcOffset(vectors[0], 1, vectors, -1, join, cap, true)); // normal
+
+
         for(var i = 0; i < vectors.length; i++) {
-            newVertices = newVertices.concat(points[i]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, 'round')); // normal
-
-            newVertices = newVertices.concat(points[i]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, 'round')); // normal
-
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, 'round')); // normal
-
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, 'round')); // normal
-
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 4, vectors, i, 'round')); // normal
-        }
-        return newVertices;
-    },
-
-    buildMiterVertices: function(newVertices, vectors, points) {
-        for(var i = 0; i < vectors.length; i++) {
-            if (i === 0) {
+            if (join !== 'miter' || i === 0) {
                 newVertices = newVertices.concat(points[i]);
-                newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, 'miter')); // normal
+                newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, join, cap)); // normal
 
                 newVertices = newVertices.concat(points[i]);
-                newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, 'miter')); // normal
+                newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, join, cap)); // normal
             }
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, 'miter')); // normal
 
             newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, 'miter')); // normal
+            newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, join, cap)); // normal
+
+            newVertices = newVertices.concat(points[i + 1]);
+            newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, join, cap)); // normal
+
+            if (join === 'round' && i !== vectors.length - 1) {
+                newVertices = newVertices.concat(points[i + 1]);
+                newVertices = newVertices.concat(this.calcOffset(vectors[i], 4, vectors, i, join, cap)); // normal
+            }
         }
+        newVertices = newVertices.concat(points[points.length - 1]);
+        newVertices = newVertices.concat(this.calcOffset(vectors[vectors.length - 1], 2, vectors, vectors.length, join, cap, true)); // normal
+        newVertices = newVertices.concat(points[points.length - 1]);
+        newVertices = newVertices.concat(this.calcOffset(vectors[vectors.length - 1], 3, vectors, vectors.length, join, cap, true)); // normal
         return newVertices;
+
     },
 
-    buildBevelVertices: function(newVertices, vectors, points) {
-        for(var i = 0; i < vectors.length; i++) {
-            newVertices = newVertices.concat(points[i]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, 'bevel')); // normal
-
-            newVertices = newVertices.concat(points[i]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, 'bevel')); // normal
-
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, 'bevel')); // normal
-
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, 'bevel')); // normal
-        }
-        return newVertices;
-    },
-
-    addObject: function(object, attributes, callback, type) {
+    addObject: function(object, attributes, callback, join, cap) {
         var gl = this.gl;
         object.originvbo = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, object.originvbo);
@@ -202,7 +199,7 @@ var Scene = {
 
         object.vbo = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, object.vbo);
-        object.vertices = this.buildLineVertices(object.originVertices, type);
+        object.vertices = this.buildLineVertices(object.originVertices, join, cap);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(object.vertices), this.gl.STATIC_DRAW);
 
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);

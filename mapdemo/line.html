@@ -41,11 +41,10 @@
 
     void main() {
         float distance = distance(vOrigin, vPosition);
-        if(vIndex > 0.0 && distance > uLineWidth) {
-            gl_FragColor = vec4(uColor, 0.0);
-    //    discard;
+       if(vIndex > 0.0 && distance > uLineWidth) {
+    discard;
         } else {
-            gl_FragColor = vec4(uColor, 1.0);
+            gl_FragColor = vec4(uColor, 1);
         }
     }
 </script>
@@ -97,6 +96,12 @@
         <button id="miter">miter</button>
         <button id="bevel">bevel</button>
         <button id="round">round</button>
+    </div>
+    <div>
+        cap:
+        <button id="cap-butt">butt</button>
+        <button id="cap-square">square</button>
+        <button id="cap-round">round</button>
     </div>
 </div>
 <script type="text/javascript" src="js/framework/Utils.js"></script>
