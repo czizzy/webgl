@@ -34,9 +34,9 @@ var Scene = {
     },
     calcNormal: function(vector, index) {
         var normal;
-        if(index === 0 || index === 2) {
+        if(index === 0 || index === 2 || index === 4 || index == 6) {
             normal = [-vector[1], vector[0]];
-        } else if(index === 3 || index === 1){
+        } else if(index === 3 || index === 1 || index === 5 || index == 7){
             normal = [vector[1], -vector[0]];
         } else {
             normal = [-vector[1], vector[0]];
@@ -70,36 +70,40 @@ var Scene = {
         return false;
     },
 
-    calcOffset: function(vector, index, vectors, vIndex, join, cap, isPlus) {
+    // index: 0, 1, 2, 3 四边形四个点
+    // index 4, 5 linecap 开始增加点
+    // index 6, 7 linecap 结束增加点
+    // index 8 linjoin round 增加点
+    
+    
+    calcOffset: function(vector, index, otherVector, join, cap) {
         var normal = this.calcNormal(vector, index);
         var vector1, vector2;
-        if (index === 0 || index === 1) {
-            vector1 = vectors[vIndex - 1];
+        if (index === 0 || index === 1 || index == 4 || index == 5) {
+            vector1 = otherVector;
             vector2 = vector;
         } else {
             vector1 = vector;
-            vector2 = vectors[vIndex + 1];
+            vector2 = otherVector;
         }
         if (!vector1 || !vector2) { // 第一个点或最后一个点
             if (cap === 'butt') {
-                normal.push(index);
+                normal.push(0);
                 return normal;
             } else {
-                if (isPlus) {
+                if (index === 4 || index === 5 || index === 6 || index == 7) {
                     if (!vector1) {
                         normal = [normal[0] - vector[0], normal[1] - vector[1]];
                     } else {
                         normal = [normal[0] + vector[0], normal[1] + vector[1]];
                     }
-                    console.log(normal);
                     if (cap === 'round') {
-                        normal.push(4);
+                        normal.push(1);
                     } else {
-                        console.log(index);
-                        normal.push(index);
+                        normal.push(0);
                     }
                 } else {
-                    normal.push(index);
+                    normal.push(0);
                     return normal;
                 }
                 return normal;
@@ -109,13 +113,13 @@ var Scene = {
         vec2.normalize(tangent, [vector1[0] + vector2[0], vector1[1] + vector2[1]]);
         var useNormal = this.useNormal(join, tangent, normal, index);
         if(useNormal) {
-            normal.push(index);
+            normal.push(0);
             return normal;
         }
 
         var miter = this.calcMiter(tangent, normal);
 
-        if (index === 4) { // round plus dot
+        if (index === 8) { // round plus dot
             var normalMiter = [];
             vec2.normalize(normalMiter, miter);
             var normalVector = [];
@@ -124,8 +128,9 @@ var Scene = {
             if (cos < 0) {
                 miter = vec2.negate(miter, miter);
             }
+            index = 1;
         } else {
-            index = 5; // round special point
+            index = -1; // round special point
         }
         miter.push(index);
         return miter;
@@ -166,45 +171,45 @@ var Scene = {
         var indices = [];
         
         vertices = vertices.concat(points[0]);
-        vertices = vertices.concat(this.calcOffset(vectors[0], 0, vectors, -1, join, cap, true)); // normal
+        vertices = vertices.concat(this.calcOffset(vectors[0], 4, undefined, join, cap)); // normal
         count++;
 
         vertices = vertices.concat(points[0]);
-        vertices = vertices.concat(this.calcOffset(vectors[0], 1, vectors, -1, join, cap, true)); // normal
+        vertices = vertices.concat(this.calcOffset(vectors[0], 5, undefined, join, cap)); // normal
         count++;
 
         for(var i = 0; i < vectors.length; i++) {
             if (join !== 'miter' || i === 0) {
                 vertices = vertices.concat(points[i]);
-                vertices = vertices.concat(this.calcOffset(vectors[i], 0, vectors, i, join, cap)); // normal
+                vertices = vertices.concat(this.calcOffset(vectors[i], 0, vectors[i - 1], join, cap)); // normal
                 indices = indices.concat(this.buildIndex(++count));
 
                 vertices = vertices.concat(points[i]);
-                vertices = vertices.concat(this.calcOffset(vectors[i], 1, vectors, i, join, cap)); // normal
+                vertices = vertices.concat(this.calcOffset(vectors[i], 1, vectors[i - 1], join, cap)); // normal
                 indices = indices.concat(this.buildIndex(++count));
 
             }
 
             vertices = vertices.concat(points[i + 1]);
-            vertices = vertices.concat(this.calcOffset(vectors[i], 2, vectors, i, join, cap)); // normal
+            vertices = vertices.concat(this.calcOffset(vectors[i], 2, vectors[i + 1], join, cap)); // normal
             indices = indices.concat(this.buildIndex(++count));
 
             vertices = vertices.concat(points[i + 1]);
-            vertices = vertices.concat(this.calcOffset(vectors[i], 3, vectors, i, join, cap)); // normal
+            vertices = vertices.concat(this.calcOffset(vectors[i], 3, vectors[i + 1], join, cap)); // normal
             indices = indices.concat(this.buildIndex(++count));
 
             if (join === 'round' && i !== vectors.length - 1) {
                 vertices = vertices.concat(points[i + 1]);
-                vertices = vertices.concat(this.calcOffset(vectors[i], 4, vectors, i, join, cap)); // normal
+                vertices = vertices.concat(this.calcOffset(vectors[i], 8, vectors[i + 1], join, cap)); // normal
                 indices = indices.concat(this.buildIndex(++count));
             }
         }
         vertices = vertices.concat(points[points.length - 1]);
-        vertices = vertices.concat(this.calcOffset(vectors[vectors.length - 1], 2, vectors, vectors.length, join, cap, true)); // normal
+        vertices = vertices.concat(this.calcOffset(vectors[vectors.length - 1], 6, undefined, join, cap)); // normal
         indices = indices.concat(this.buildIndex(++count));
 
         vertices = vertices.concat(points[points.length - 1]);
-        vertices = vertices.concat(this.calcOffset(vectors[vectors.length - 1], 3, vectors, vectors.length, join, cap, true)); // normal
+        vertices = vertices.concat(this.calcOffset(vectors[vectors.length - 1], 7, undefined, join, cap)); // normal
         indices = indices.concat(this.buildIndex(++count));
 
         return {

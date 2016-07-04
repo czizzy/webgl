@@ -67,13 +67,7 @@
     void main() {
         vec2 vertexPos;
         vOrigin = aVertexPosition.xy;
-        if(aVertexIndex == 4.0) {
-            vIndex = 1.0;
-        } else if(aVertexIndex == 5.0) {
-            vIndex = -1.0;
-        } else {
-            vIndex = 0.0;
-        }
+    vIndex = aVertexIndex;
         vertexPos = aVertexPosition.xy + aVertexNormal * uLineWidth;
         vPosition = vertexPos.xy;
         gl_Position = uPMatrix * uMVMatrix * vec4(vertexPos, 0.0, 1.0);
