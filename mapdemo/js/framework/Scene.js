@@ -131,7 +131,16 @@ var Scene = {
         return miter;
     },
 
-    buildLineVertices: function(vertices, join, cap) {
+    buildIndex: function (index) {
+        if (index % 2 === 0) {
+            return [index - 2, index - 1, index];
+        } else {
+            return [index - 1, index - 2, index];
+        }
+    },
+
+
+    buildLineVertices: function(vertices, join, cap, count) {
         var points = [];
         for(var i = 0; i < vertices.length; i++) {
             if(i % 2 === 0) {
@@ -149,58 +158,90 @@ var Scene = {
                 vectors.push([normalVector[0], normalVector[1]]);
             }
         }
-        var newVertices = [];
-        newVertices = this.buildVertices(newVertices, vectors, points, join, cap);
-        return newVertices;
+        return this.buildVertices(vectors, points, join, cap, count);
     },
 
-    buildVertices: function (newVertices, vectors, points, join, cap) {
-        newVertices = newVertices.concat(points[0]);
-        newVertices = newVertices.concat(this.calcOffset(vectors[0], 0, vectors, -1, join, cap, true)); // normal
-        newVertices = newVertices.concat(points[0]);
-        newVertices = newVertices.concat(this.calcOffset(vectors[0], 1, vectors, -1, join, cap, true)); // normal
+    buildVertices: function (vectors, points, join, cap, count) {
+        var vertices = [];
+        var indices = [];
+        
+        vertices = vertices.concat(points[0]);
+        vertices = vertices.concat(this.calcOffset(vectors[0], 0, vectors, -1, join, cap, true)); // normal
+        count++;
 
+        vertices = vertices.concat(points[0]);
+        vertices = vertices.concat(this.calcOffset(vectors[0], 1, vectors, -1, join, cap, true)); // normal
+        count++;
 
         for(var i = 0; i < vectors.length; i++) {
             if (join !== 'miter' || i === 0) {
-                newVertices = newVertices.concat(points[i]);
-                newVertices = newVertices.concat(this.calcOffset(vectors[i], 0, vectors, i, join, cap)); // normal
+                vertices = vertices.concat(points[i]);
+                vertices = vertices.concat(this.calcOffset(vectors[i], 0, vectors, i, join, cap)); // normal
+                indices = indices.concat(this.buildIndex(++count));
 
-                newVertices = newVertices.concat(points[i]);
-                newVertices = newVertices.concat(this.calcOffset(vectors[i], 1, vectors, i, join, cap)); // normal
+                vertices = vertices.concat(points[i]);
+                vertices = vertices.concat(this.calcOffset(vectors[i], 1, vectors, i, join, cap)); // normal
+                indices = indices.concat(this.buildIndex(++count));
+
             }
 
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 2, vectors, i, join, cap)); // normal
+            vertices = vertices.concat(points[i + 1]);
+            vertices = vertices.concat(this.calcOffset(vectors[i], 2, vectors, i, join, cap)); // normal
+            indices = indices.concat(this.buildIndex(++count));
 
-            newVertices = newVertices.concat(points[i + 1]);
-            newVertices = newVertices.concat(this.calcOffset(vectors[i], 3, vectors, i, join, cap)); // normal
+            vertices = vertices.concat(points[i + 1]);
+            vertices = vertices.concat(this.calcOffset(vectors[i], 3, vectors, i, join, cap)); // normal
+            indices = indices.concat(this.buildIndex(++count));
 
             if (join === 'round' && i !== vectors.length - 1) {
-                newVertices = newVertices.concat(points[i + 1]);
-                newVertices = newVertices.concat(this.calcOffset(vectors[i], 4, vectors, i, join, cap)); // normal
+                vertices = vertices.concat(points[i + 1]);
+                vertices = vertices.concat(this.calcOffset(vectors[i], 4, vectors, i, join, cap)); // normal
+                indices = indices.concat(this.buildIndex(++count));
             }
         }
-        newVertices = newVertices.concat(points[points.length - 1]);
-        newVertices = newVertices.concat(this.calcOffset(vectors[vectors.length - 1], 2, vectors, vectors.length, join, cap, true)); // normal
-        newVertices = newVertices.concat(points[points.length - 1]);
-        newVertices = newVertices.concat(this.calcOffset(vectors[vectors.length - 1], 3, vectors, vectors.length, join, cap, true)); // normal
-        return newVertices;
+        vertices = vertices.concat(points[points.length - 1]);
+        vertices = vertices.concat(this.calcOffset(vectors[vectors.length - 1], 2, vectors, vectors.length, join, cap, true)); // normal
+        indices = indices.concat(this.buildIndex(++count));
 
+        vertices = vertices.concat(points[points.length - 1]);
+        vertices = vertices.concat(this.calcOffset(vectors[vectors.length - 1], 3, vectors, vectors.length, join, cap, true)); // normal
+        indices = indices.concat(this.buildIndex(++count));
+
+        return {
+            vertices: vertices,
+            indices: indices,
+            count: count
+        };
     },
 
     addObject: function(object, attributes, callback, join, cap) {
         var gl = this.gl;
-        object.originvbo = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, object.originvbo);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(object.originVertices), this.gl.STATIC_DRAW);
+        object.originvbos = [];
+        for (var i = 0; i < object.originVertices.length; i++) {
+            object.originvbos.push(this.gl.createBuffer());
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, object.originvbos[i]);
+            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(object.originVertices[i]), this.gl.STATIC_DRAW);
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER,null);
+        }
 
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER,null);
-
+        console.log(object);
         object.vbo = this.gl.createBuffer();
+        object.ibo = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, object.vbo);
-        object.vertices = this.buildLineVertices(object.originVertices, join, cap);
+        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, object.ibo);
+        var vertices = [];
+        var indices = [];
+        var count = -1;
+        for (var i = 0; i < object.originVertices.length; i++) {
+            var data = this.buildLineVertices(object.originVertices[i], join, cap, count);
+            count = data.count;
+            vertices = vertices.concat(data.vertices);
+            indices = indices.concat(data.indices);
+        }
+        object.vertices = vertices;
+        object.indices = indices;
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(object.vertices), this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(object.indices), this.gl.STATIC_DRAW);
 
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER,null);
@@ -211,8 +252,8 @@ var Scene = {
         this.objects.push(object);
 
         if (callback != undefined){
-			callback(object);
-		}
+	    callback(object);
+	}
     },
 
     getObject : function(alias){

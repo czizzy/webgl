@@ -90,6 +90,7 @@ class App extends WebGLApp {
             transform.pop();
             var size = 4;
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, obj.vbo);
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, obj.ibo);
             this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.FLOAT, false, 5 * size, 0);
             this.gl.enableVertexAttribArray(attrs.aVertexPosition);
 
@@ -98,16 +99,19 @@ class App extends WebGLApp {
 
             this.gl.vertexAttribPointer(attrs.aVertexIndex, 1, this.gl.FLOAT, false, 5 * size, 4 * size);
             this.gl.enableVertexAttribArray(attrs.aVertexIndex);
+
             this.gl.uniform3f(unis.uColor, 1, 0, 0);
             this.gl.uniform1f(unis.uLineWidth, obj.lineWidth);
             this.gl.uniform1f(unis.uResoluteion, this.canvas.width, this.canvas.height);
 
-            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, obj.vertices.length / 5);
+            // this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, obj.vertices.length / 5);
+            this.gl.drawElements(this.gl.TRIANGLES, obj.indices.length, this.gl.UNSIGNED_SHORT, 0);
 
             if(withLines) {
                 this.setDepth(0);
                 this.gl.uniform3f(unis.uColor, 0, 0, 1);
                 this.gl.lineWidth(1);
+                // this.gl.drawElements(this.gl.LINES_STRIP, obj.indices.length, this.gl.UNSIGNED_SHORT, 0);
                 this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.vertices.length / 5);
             }
 
@@ -127,16 +131,18 @@ class App extends WebGLApp {
             transform.updateMvMatrix(obj.modelMatrix);
             transform.setMatrixUniforms(prg.unis);
             transform.pop();
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, obj.originvbo);
-            this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.FLOAT, false, 0, 0);
-            this.gl.enableVertexAttribArray(attrs.aVertexPosition);
+            for (var i = 0; i < obj.originVertices.length; i++) {
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, obj.originvbos[i]);
+                this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.FLOAT, false, 0, 0);
+                this.gl.enableVertexAttribArray(attrs.aVertexPosition);
 
-            this.gl.lineWidth(10);
+                this.gl.lineWidth(1);
 
-            this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.originVertices.length / 2);
+                this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.originVertices[i].length / 2);
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
+                this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
+            }
 
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
-            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
 
         });
     }
