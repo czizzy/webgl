@@ -77,6 +77,7 @@ var Scene = {
     
     
     calcOffset: function(vector, index, otherVector, join, cap) {
+        console.log('a');
         var normal = this.calcNormal(vector, index);
         var vector1, vector2;
         if (index === 0 || index === 1 || index == 4 || index == 5) {
@@ -86,10 +87,14 @@ var Scene = {
             vector1 = vector;
             vector2 = otherVector;
         }
+        if (index % 2 === 0) {
+            var direction = 1;
+        } else {
+            direction = -1;
+        }
         if (!vector1 || !vector2) { // 第一个点或最后一个点
             if (cap === 'butt') {
                 normal.push(0);
-                return normal;
             } else {
                 if (index === 4 || index === 5 || index === 6 || index == 7) {
                     if (!vector1) {
@@ -104,16 +109,17 @@ var Scene = {
                     }
                 } else {
                     normal.push(0);
-                    return normal;
                 }
-                return normal;
             }
+            normal.push(direction);
+            return normal;
         }
         var tangent = [];
         vec2.normalize(tangent, [vector1[0] + vector2[0], vector1[1] + vector2[1]]);
         var useNormal = this.useNormal(join, tangent, normal, index);
         if(useNormal) {
             normal.push(0);
+            normal.push(direction);
             return normal;
         }
 
@@ -127,12 +133,14 @@ var Scene = {
             var cos = vec2.dot(normalMiter, normalVector);
             if (cos < 0) {
                 miter = vec2.negate(miter, miter);
+                direction = -direction;
             }
             index = 1;
         } else {
             index = -1; // round special point
         }
         miter.push(index);
+        miter.push(direction);
         return miter;
     },
 
@@ -159,7 +167,11 @@ var Scene = {
             if(i !== points.length - 1) {
                 var vector = [points[i + 1][0] - points[i][0], points[i + 1][1] - points[i][1]];
                 var normalVector = [];
-                vec2.normalize(normalVector, vector);
+                if (vector[0] === 0 && vector[1] === 0) {
+                    normalVector = [0, 0];
+                } else {
+                    vec2.normalize(normalVector, vector);
+                }
                 vectors.push([normalVector[0], normalVector[1]]);
             }
         }

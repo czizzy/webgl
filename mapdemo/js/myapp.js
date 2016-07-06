@@ -23,7 +23,8 @@ class App extends WebGLApp {
 	    var attributeList = [
             "aVertexPosition",
 		"aVertexNormal",
-            "aVertexIndex"
+                "aVertexIndex",
+                "aDirection"
         ];
 
 	    var uniformList = [
@@ -91,14 +92,18 @@ class App extends WebGLApp {
             var size = 4;
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, obj.vbo);
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, obj.ibo);
-            this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.FLOAT, false, 5 * size, 0);
+            this.gl.vertexAttribPointer(attrs.aVertexPosition, 2, this.gl.FLOAT, false, 6 * size, 0);
             this.gl.enableVertexAttribArray(attrs.aVertexPosition);
 
-            this.gl.vertexAttribPointer(attrs.aVertexNormal, 2, this.gl.FLOAT, false, 5 * size, 2 * size);
+            this.gl.vertexAttribPointer(attrs.aVertexNormal, 2, this.gl.FLOAT, false, 6 * size, 2 * size);
             this.gl.enableVertexAttribArray(attrs.aVertexNormal);
 
-            this.gl.vertexAttribPointer(attrs.aVertexIndex, 1, this.gl.FLOAT, false, 5 * size, 4 * size);
+            this.gl.vertexAttribPointer(attrs.aVertexIndex, 1, this.gl.FLOAT, false, 6 * size, 4 * size);
             this.gl.enableVertexAttribArray(attrs.aVertexIndex);
+            console.log(attrs);
+            this.gl.vertexAttribPointer(attrs.aDirection, 1, this.gl.FLOAT, false, 6 * size, 5 * size);
+            this.gl.enableVertexAttribArray(attrs.aDirection);
+
 
             this.gl.uniform3f(unis.uColor, 1, 0, 0);
             this.gl.uniform1f(unis.uLineWidth, obj.lineWidth);
@@ -112,7 +117,7 @@ class App extends WebGLApp {
                 this.gl.uniform3f(unis.uColor, 0, 0, 1);
                 this.gl.lineWidth(1);
                 // this.gl.drawElements(this.gl.LINES_STRIP, obj.indices.length, this.gl.UNSIGNED_SHORT, 0);
-                this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.vertices.length / 5);
+                this.gl.drawArrays(this.gl.LINE_STRIP, 0, obj.vertices.length / 6);
             }
 
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);

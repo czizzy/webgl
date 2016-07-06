@@ -37,14 +37,20 @@
 
     varying vec2 vOrigin;
     varying float vIndex;
+    varying float vDirection;
     varying vec2 vPosition;
 
     void main() {
         float distance = distance(vOrigin, vPosition);
-       if(vIndex > 0.0 && distance > uLineWidth) {
-    discard;
+        if(vIndex > 0.0 && distance >= uLineWidth) {
+            discard;
         } else {
-            gl_FragColor = vec4(uColor, 1);
+            if (abs(vDirection) > 0.9) {
+                float alpha = smoothstep(0.0, 1.0, 10.0 * (1.0 - abs(vDirection)));
+                gl_FragColor = vec4(uColor.rgb, alpha);
+            } else {
+                gl_FragColor = vec4(uColor, 1);
+            }
         }
     }
 </script>
@@ -53,6 +59,7 @@
     attribute vec3 aVertexPosition;
     attribute vec2 aVertexNormal;
     attribute float aVertexIndex;
+    attribute float aDirection;
 
     uniform mat4 uMVMatrix;
     uniform mat4 uPMatrix;
@@ -63,11 +70,13 @@
     varying vec2 vOrigin;
     varying vec2 vPosition;
     varying float vIndex;
+        varying float vDirection;
 
     void main() {
         vec2 vertexPos;
         vOrigin = aVertexPosition.xy;
-    vIndex = aVertexIndex;
+        vIndex = aVertexIndex;
+        vDirection = aDirection;
         vertexPos = aVertexPosition.xy + aVertexNormal * uLineWidth;
         vPosition = vertexPos.xy;
         gl_Position = uPMatrix * uMVMatrix * vec4(vertexPos, 0.0, 1.0);
