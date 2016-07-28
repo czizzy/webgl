@@ -12,7 +12,6 @@ class Camera {
         if(home) {
             this.home = home;
         }
-        console.log(this.home);
         this.azimuth = 0;
         this.elevation = 0;
         this.setPosition(this.home);
@@ -30,7 +29,6 @@ class Camera {
 
     update() {
         mat4.identity(this.matrix);
-        console.log(this.position)
         if (this.type === 'orbit') {
             mat4.translate(this.matrix, this.matrix, this.position);
             mat4.rotateY(this.matrix, this.matrix, this.azimuth / 180 * Math.PI);
@@ -41,7 +39,6 @@ class Camera {
             mat4.translate(this.matrix, this.matrix, this.position);
             
         }
-        console.log(this.matrix)
     }
 
     getViewTransform() {
